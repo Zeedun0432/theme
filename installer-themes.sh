@@ -127,7 +127,7 @@ install_theme() {
     
     case "$SELECT_THEME" in
       1)
-        THEME_URL="https://github.com/Zeedun0432/theme/blob/main/1.%20Ultra%20Theme.zip"
+        THEME_URL="https://raw.githubusercontent.com/Zeedun0432/theme/main/1.%20Ultra%20Theme.zip"
         THEME_NAME="Ultra Theme"
         THEME_TYPE="standard"
         break
