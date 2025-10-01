@@ -17,7 +17,7 @@ display_welcome() {
   echo -e ""
   echo -e "ZEEDUN STORE INDONESIA"
   echo -e ""
-  sleep 4
+  sleep 2
   clear
 }
  
@@ -27,7 +27,7 @@ install_jq() {
   echo -e "${GREEN}[+]             UPDATE & INSTALL SERVER             [+]${NC}"
   echo -e "${GREEN}[+] =============================================== [+]${NC}"
   echo -e "                                                       "
-  sudo apt update && sudo apt install -y jq
+  sudo apt update -y && sudo apt install -y jq unzip curl wget
   if [ $? -eq 0 ]; then
     echo -e "                                                       "
     echo -e "${GREEN}[+] =============================================== [+]${NC}"
@@ -45,29 +45,23 @@ install_jq() {
   clear
 }
 
-check_token() {
-  echo -e "                                                       "
-  echo -e "${GREEN}[+] =============================================== [+]${NC}"
-  echo -e "${GREEN}[+]                 LICENSE ZEEDUN                    [+]${NC}"
-  echo -e "${GREEN}[+] =============================================== [+]${NC}"
-  echo -e "                                                       "
-  echo -e "${YELLOW}MASUKAN AKSES TOKEN :${NC}"
-  read -r USER_TOKEN
-
-  if [ "$USER_TOKEN" = "Zeedun" ]; then
-    echo -e "${GREEN}AKSES BERHASIL${NC}"
-  else
-    echo -e "${RED}ZEEDUN | TIDAK UNTUK DIJUAL BELIKAN${NC}"
-    exit 1
-  fi
-  clear
-}
-
 clean_previous_theme() {
   echo -e "${YELLOW}[+] Membersihkan theme sebelumnya...${NC}"
   
-  if [ -e /root/pterodactyl ]; then
+  if [ -d /root/pterodactyl ]; then
     sudo rm -rf /root/pterodactyl
+  fi
+  
+  if [ -d /root/pterodactyl_temp ]; then
+    sudo rm -rf /root/pterodactyl_temp
+  fi
+  
+  if [ -f /root/theme.zip ]; then
+    sudo rm -f /root/theme.zip
+  fi
+  
+  if [ -f /root/nebula.sh ]; then
+    sudo rm -f /root/nebula.sh
   fi
   
   cd /var/www/pterodactyl
@@ -79,6 +73,7 @@ clean_previous_theme() {
   sudo rm -rf /var/www/pterodactyl/public/assets/*
   
   echo -e "${GREEN}[+] Pembersihan selesai${NC}"
+  sleep 1
 }
 
 detect_theme_structure() {
@@ -86,17 +81,37 @@ detect_theme_structure() {
   
   if [ -d "$extract_dir/pterodactyl" ]; then
     echo "$extract_dir/pterodactyl"
-  elif [ -d "$extract_dir/resources" ]; then
+    return
+  fi
+  
+  if [ -d "$extract_dir/resources" ] && [ -d "$extract_dir/public" ]; then
     echo "$extract_dir"
-  else
-    local found_path=$(find "$extract_dir" -type d -name "resources" | head -n 1)
-    if [ -n "$found_path" ]; then
-      echo "$(dirname "$found_path")"
-    else
-      local subdir=$(find "$extract_dir" -mindepth 1 -maxdepth 1 -type d | head -n 1)
-      echo "$subdir"
+    return
+  fi
+  
+  local found_resources=$(find "$extract_dir" -type d -name "resources" -path "*/resources" | head -n 1)
+  if [ -n "$found_resources" ]; then
+    local parent_dir=$(dirname "$found_resources")
+    if [ -d "$parent_dir/public" ]; then
+      echo "$parent_dir"
+      return
     fi
   fi
+  
+  local first_subdir=$(find "$extract_dir" -mindepth 1 -maxdepth 1 -type d | head -n 1)
+  if [ -n "$first_subdir" ]; then
+    if [ -d "$first_subdir/resources" ] && [ -d "$first_subdir/public" ]; then
+      echo "$first_subdir"
+      return
+    fi
+    
+    if [ -d "$first_subdir/pterodactyl" ]; then
+      echo "$first_subdir/pterodactyl"
+      return
+    fi
+  fi
+  
+  echo "$extract_dir"
 }
 
 install_theme() {
@@ -166,7 +181,7 @@ install_theme() {
       7)
         THEME_URL="https://github.com/Zeedun0432/theme/raw/refs/heads/main/enigma.zip"
         THEME_NAME="Enigma"
-        THEME_TYPE="enigma"
+        THEME_TYPE="standard"
         break
         ;;
       8)
@@ -224,6 +239,7 @@ install_theme() {
         ;;
       *)
         echo -e "${RED}Pilihan tidak valid, silahkan coba lagi.${NC}"
+        sleep 2
         ;;
     esac
   done
@@ -236,7 +252,14 @@ install_theme() {
   fi
   
   echo -e "${YELLOW}[+] Downloading $THEME_NAME...${NC}"
-  wget -q "$THEME_URL" -O "/root/$THEME_FILE"
+  wget -q --show-progress "$THEME_URL" -O "/root/$THEME_FILE"
+  
+  if [ ! -f "/root/$THEME_FILE" ]; then
+    echo -e "${RED}[+] Download gagal! File tidak ditemukan.${NC}"
+    php artisan up
+    sleep 3
+    return
+  fi
   
   if [ "$THEME_TYPE" = "nebula" ]; then
     echo -e "                                                       "
@@ -246,83 +269,90 @@ install_theme() {
     echo -e "                                                       "
     chmod +x "/root/$THEME_FILE"
     bash "/root/$THEME_FILE"
-    sudo rm "/root/$THEME_FILE"
+    sudo rm -f "/root/$THEME_FILE"
   else
     mkdir -p /root/pterodactyl_temp
-    sudo unzip -o "/root/$THEME_FILE" -d /root/pterodactyl_temp
+    echo -e "${YELLOW}[+] Extracting theme...${NC}"
+    sudo unzip -q -o "/root/$THEME_FILE" -d /root/pterodactyl_temp
+    
+    if [ $? -ne 0 ]; then
+      echo -e "${RED}[+] Extract gagal!${NC}"
+      sudo rm -f "/root/$THEME_FILE"
+      sudo rm -rf /root/pterodactyl_temp
+      php artisan up
+      sleep 3
+      return
+    fi
     
     THEME_SOURCE=$(detect_theme_structure "/root/pterodactyl_temp")
     
+    echo -e "${YELLOW}[+] Theme source detected at: $THEME_SOURCE${NC}"
+    
+    if [ ! -d "$THEME_SOURCE" ]; then
+      echo -e "${RED}[+] Struktur theme tidak valid!${NC}"
+      sudo rm -f "/root/$THEME_FILE"
+      sudo rm -rf /root/pterodactyl_temp
+      php artisan up
+      sleep 3
+      return
+    fi
+    
+    echo -e "                                                       "
+    echo -e "${GREEN}[+] =============================================== [+]${NC}"
+    echo -e "${GREEN}[+]                  INSTALLASI THEMA               [+]${NC}"
+    echo -e "${GREEN}[+] =============================================== [+]${NC}"
+    echo -e "                                                       "
+    
     if [ "$THEME_TYPE" = "billing" ]; then
-      echo -e "                                                       "
-      echo -e "${GREEN}[+] =============================================== [+]${NC}"
-      echo -e "${GREEN}[+]                  INSTALLASI THEMA               [+]${NC}"
-      echo -e "${GREEN}[+] =============================================== [+]${NC}"
-      echo -e "                                                       "
       sudo cp -rfT "$THEME_SOURCE" /var/www/pterodactyl
-      curl -sL https://deb.nodesource.com/setup_16.x | sudo -E bash -
-      sudo apt install -y nodejs
-      npm i -g yarn
+      
+      if ! command -v node &> /dev/null; then
+        echo -e "${YELLOW}[+] Installing Node.js...${NC}"
+        curl -sL https://deb.nodesource.com/setup_16.x | sudo -E bash -
+        sudo apt install -y nodejs
+      fi
+      
+      if ! command -v yarn &> /dev/null; then
+        echo -e "${YELLOW}[+] Installing Yarn...${NC}"
+        sudo npm i -g yarn
+      fi
+      
       cd /var/www/pterodactyl
       yarn add react-feather
       php artisan billing:install stable
-      php artisan migrate
+      php artisan migrate --force
       yarn build:production
       php artisan view:clear
-      sudo rm "/root/$THEME_FILE"
-      sudo rm -rf /root/pterodactyl_temp
-      
-    elif [ "$THEME_TYPE" = "enigma" ]; then
-      echo -e "                                                       "
-      echo -e "${GREEN}[+] =============================================== [+]${NC}"
-      echo -e "${GREEN}[+]                  INSTALLASI THEMA               [+]${NC}"
-      echo -e "${GREEN}[+] =============================================== [+]${NC}"
-      echo -e "                                                       "
-      
-      echo -e "${YELLOW}Masukkan link wa (https://wa.me...) : ${NC}"
-      read -r LINK_WA
-      echo -e "${YELLOW}Masukkan link group (https://.....) : ${NC}"
-      read -r LINK_GROUP
-      echo -e "${YELLOW}Masukkan link channel (https://...) : ${NC}"
-      read -r LINK_CHNL
-
-      if [ -f "$THEME_SOURCE/resources/scripts/components/dashboard/DashboardContainer.tsx" ]; then
-        sudo sed -i "s|LINK_WA|$LINK_WA|g" "$THEME_SOURCE/resources/scripts/components/dashboard/DashboardContainer.tsx"
-        sudo sed -i "s|LINK_GROUP|$LINK_GROUP|g" "$THEME_SOURCE/resources/scripts/components/dashboard/DashboardContainer.tsx"
-        sudo sed -i "s|LINK_CHNL|$LINK_CHNL|g" "$THEME_SOURCE/resources/scripts/components/dashboard/DashboardContainer.tsx"
-      fi
-
-      sudo cp -rfT "$THEME_SOURCE" /var/www/pterodactyl
-      curl -sL https://deb.nodesource.com/setup_16.x | sudo -E bash -
-      sudo apt install -y nodejs
-      sudo npm i -g yarn
-      cd /var/www/pterodactyl
-      yarn add react-feather
-      php artisan migrate
-      yarn build:production
-      php artisan view:clear
-      sudo rm "/root/$THEME_FILE"
-      sudo rm -rf /root/pterodactyl_temp
+      php artisan config:clear
+      php artisan route:clear
       
     else
-      echo -e "                                                       "
-      echo -e "${GREEN}[+] =============================================== [+]${NC}"
-      echo -e "${GREEN}[+]                  INSTALLASI $THEME_NAME         [+]${NC}"
-      echo -e "${GREEN}[+] =============================================== [+]${NC}"
-      echo -e "                                                       "
-      
       sudo cp -rfT "$THEME_SOURCE" /var/www/pterodactyl
-      curl -sL https://deb.nodesource.com/setup_16.x | sudo -E bash -
-      sudo apt install -y nodejs
-      sudo npm i -g yarn
+      
+      if ! command -v node &> /dev/null; then
+        echo -e "${YELLOW}[+] Installing Node.js...${NC}"
+        curl -sL https://deb.nodesource.com/setup_16.x | sudo -E bash -
+        sudo apt install -y nodejs
+      fi
+      
+      if ! command -v yarn &> /dev/null; then
+        echo -e "${YELLOW}[+] Installing Yarn...${NC}"
+        sudo npm i -g yarn
+      fi
+      
       cd /var/www/pterodactyl
       yarn add react-feather
-      php artisan migrate
+      php artisan migrate --force
       yarn build:production
       php artisan view:clear
-      sudo rm "/root/$THEME_FILE"
-      sudo rm -rf /root/pterodactyl_temp
+      php artisan config:clear
+      php artisan route:clear
     fi
+    
+    sudo chown -R www-data:www-data /var/www/pterodactyl/*
+    
+    sudo rm -f "/root/$THEME_FILE"
+    sudo rm -rf /root/pterodactyl_temp
   fi
 
   php artisan up
@@ -333,7 +363,7 @@ install_theme() {
   echo -e "${GREEN}[+]            $THEME_NAME BERHASIL DIINSTALL       [+]${NC}"
   echo -e "${GREEN}[+] =============================================== [+]${NC}"
   echo -e ""
-  sleep 2
+  sleep 3
   clear
 }
 
@@ -356,7 +386,7 @@ uninstall_theme() {
 create_node() {
   echo -e "                                                       "
   echo -e "${GREEN}[+] =============================================== [+]${NC}"
-  echo -e "${GREEN}[+]                    CREATE NODE                     [+]${NC}"
+  echo -e "${GREEN}[+]                    CREATE NODE                  [+]${NC}"
   echo -e "${GREEN}[+] =============================================== [+]${NC}"
   echo -e "                                                       "
 
@@ -396,7 +426,7 @@ EOF
 
   echo -e "                                                       "
   echo -e "${GREEN}[+] =============================================== [+]${NC}"
-  echo -e "${GREEN}[+]        CREATE NODE & LOCATION SUKSES             [+]${NC}"
+  echo -e "${GREEN}[+]        CREATE NODE & LOCATION SUKSES            [+]${NC}"
   echo -e "${GREEN}[+] =============================================== [+]${NC}"
   echo -e "                                                       "
   sleep 2
@@ -406,7 +436,7 @@ EOF
 uninstall_panel() {
   echo -e "                                                       "
   echo -e "${GREEN}[+] =============================================== [+]${NC}"
-  echo -e "${GREEN}[+]                    UNINSTALL PANEL                 [+]${NC}"
+  echo -e "${GREEN}[+]                    UNINSTALL PANEL              [+]${NC}"
   echo -e "${GREEN}[+] =============================================== [+]${NC}"
   echo -e "                                                       "
 
@@ -419,7 +449,7 @@ EOF
 
   echo -e "                                                       "
   echo -e "${GREEN}[+] =============================================== [+]${NC}"
-  echo -e "${GREEN}[+]                 UNINSTALL PANEL SUKSES             [+]${NC}"
+  echo -e "${GREEN}[+]              UNINSTALL PANEL SUKSES             [+]${NC}"
   echo -e "${GREEN}[+] =============================================== [+]${NC}"
   echo -e "                                                       "
   sleep 2
@@ -429,7 +459,7 @@ EOF
 configure_wings() {
   echo -e "                                                       "
   echo -e "${GREEN}[+] =============================================== [+]${NC}"
-  echo -e "${GREEN}[+]                    CONFIGURE WINGS                 [+]${NC}"
+  echo -e "${GREEN}[+]                 CONFIGURE WINGS                 [+]${NC}"
   echo -e "${GREEN}[+] =============================================== [+]${NC}"
   echo -e "                                                       "
 
@@ -441,7 +471,7 @@ configure_wings() {
 
   echo -e "                                                       "
   echo -e "${GREEN}[+] =============================================== [+]${NC}"
-  echo -e "${GREEN}[+]                 CONFIGURE WINGS SUKSES             [+]${NC}"
+  echo -e "${GREEN}[+]              CONFIGURE WINGS SUKSES             [+]${NC}"
   echo -e "${GREEN}[+] =============================================== [+]${NC}"
   echo -e "                                                       "
   sleep 2
@@ -451,12 +481,13 @@ configure_wings() {
 hackback_panel() {
   echo -e "                                                       "
   echo -e "${GREEN}[+] =============================================== [+]${NC}"
-  echo -e "${GREEN}[+]                    HACK BACK PANEL                 [+]${NC}"
+  echo -e "${GREEN}[+]                 HACK BACK PANEL                 [+]${NC}"
   echo -e "${GREEN}[+] =============================================== [+]${NC}"
   echo -e "                                                       "
   
   read -p "Masukkan Username Panel: " user
-  read -p "Password login: " psswdhb
+  read -sp "Password login: " psswdhb
+  echo ""
   
   cd /var/www/pterodactyl || { echo "Direktori tidak ditemukan"; exit 1; }
 
@@ -471,7 +502,7 @@ EOF
 
   echo -e "                                                       "
   echo -e "${GREEN}[+] =============================================== [+]${NC}"
-  echo -e "${GREEN}[+]                 AKUN TELAH DI ADD             [+]${NC}"
+  echo -e "${GREEN}[+]                 AKUN TELAH DI ADD              [+]${NC}"
   echo -e "${GREEN}[+] =============================================== [+]${NC}"
   echo -e "                                                       "
   sleep 2
@@ -480,7 +511,6 @@ EOF
 
 display_welcome
 install_jq
-check_token
 
 while true; do
   clear
