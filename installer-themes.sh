@@ -128,85 +128,85 @@ install_theme() {
     
     case "$SELECT_THEME" in
       1)
-        THEME_URL="https://github.com/yourusername/themes/raw/main/1.%20Ultra%20Theme.zip"
+        THEME_URL="https://github.com/Zeedun0432/theme/raw/refs/heads/main/1.%20Ultra%20Theme.zip"
         THEME_NAME="Ultra Theme"
         THEME_TYPE="standard"
         break
         ;;
       2)
-        THEME_URL="https://github.com/yourusername/themes/raw/main/2.%20Cheese%20Theme.zip"
+        THEME_URL="https://github.com/Zeedun0432/theme/raw/refs/heads/main/2.%20Cheese%20Theme.zip"
         THEME_NAME="Cheese Theme"
         THEME_TYPE="standard"
         break
         ;;
       3)
-        THEME_URL="https://github.com/yourusername/themes/raw/main/3.%20Glasmorphism%20Theme.zip"
+        THEME_URL="https://github.com/Zeedun0432/theme/raw/refs/heads/main/3.%20Glasmorphism%20Theme.zip"
         THEME_NAME="Glasmorphism Theme"
         THEME_TYPE="standard"
         break
         ;;
       4)
-        THEME_URL="https://github.com/yourusername/themes/raw/main/4.%20Eleganty%20Theme.zip"
+        THEME_URL="https://github.com/Zeedun0432/theme/raw/refs/heads/main/4.%20Eleganty%20Theme.zip"
         THEME_NAME="Eleganty Theme"
         THEME_TYPE="standard"
         break
         ;;
       5)
-        THEME_URL="https://github.com/yourusername/themes/raw/main/5.%20HI%20Theme.zip"
+        THEME_URL="https://github.com/Zeedun0432/theme/raw/refs/heads/main/5.%20HI%20Theme.zip"
         THEME_NAME="HI Theme"
         THEME_TYPE="standard"
         break
         ;;
       6)
-        THEME_URL=$(echo -e "\x68\x74\x74\x70\x73\x3A\x2F\x2F\x67\x69\x74\x68\x75\x62\x2E\x63\x6F\x6D\x2F\x44\x49\x54\x5A\x5A\x31\x31\x32\x2F\x66\x6F\x78\x78\x68\x6F\x73\x74\x74\x2F\x72\x61\x77\x2F\x6D\x61\x69\x6E\x2F\x43\x31\x2E\x7A\x69\x70")
+        THEME_URL="https://github.com/Zeedun0432/theme/raw/refs/heads/main/billing.zip"
         THEME_NAME="Billing"
         THEME_TYPE="billing"
         break
         ;;
       7)
-        THEME_URL="https://setting.zeedunhost.my.id/enigma.zip"
+        THEME_URL="https://github.com/Zeedun0432/theme/raw/refs/heads/main/enigma.zip"
         THEME_NAME="Enigma"
         THEME_TYPE="enigma"
         break
         ;;
       8)
-        THEME_URL="https://github.com/yourusername/themes/raw/main/Futuristic%20Theme.zip"
+        THEME_URL="https://github.com/Zeedun0432/theme/raw/refs/heads/main/Futuristic%20Theme.zip"
         THEME_NAME="Futuristic Theme"
         THEME_TYPE="standard"
         break
         ;;
       9)
-        THEME_URL="https://github.com/yourusername/themes/raw/main/kunefe-theme.zip"
+        THEME_URL="https://github.com/Zeedun0432/theme/raw/refs/heads/main/kunefe-theme.zip"
         THEME_NAME="Kunefe Theme"
         THEME_TYPE="standard"
         break
         ;;
       10)
-        THEME_URL="https://setting.zeedunhost.my.id/nebula.sh"
+        THEME_URL="https://github.com/Zeedun0432/theme/raw/refs/heads/main/nebula.zip"
         THEME_NAME="Nebula"
         THEME_TYPE="nebula"
         break
         ;;
       11)
-        THEME_URL="https://github.com/yourusername/themes/raw/main/Pterodactyl%20Theme%20-%20Pure%20UI%20Light%20%2B%20Dark.zip"
+        THEME_URL="https://github.com/Zeedun0432/theme/raw/refs/heads/main/Pterodactyl%20Theme%20-%20Pure%20UI%20%20Light%20+%20Dark.zip"
         THEME_NAME="Pterodactyl Pure UI"
         THEME_TYPE="standard"
         break
         ;;
       12)
-        THEME_URL="https://setting.zeedunhost.my.id/stellar.zip"
+        THEME_URL="https://github.com/Zeedun0432/theme/raw/refs/heads/main/stellar.zip"
         THEME_NAME="Stellar"
         THEME_TYPE="standard"
         break
         ;;
       13)
-        THEME_URL="https://github.com/yourusername/themes/raw/main/theme_midnight-_v1.4.3.zip"
+        THEME_URL="https://github.com/Zeedun0432/theme/raw/refs/heads/main/theme_midnigh-_v1.4.3.zip"
         THEME_NAME="Theme Midnight v1.4.3"
         THEME_TYPE="standard"
         break
         ;;
       14)
-        THEME_URL="https://github.com/yourusername/themes/raw/main/Unix_Theme_v2.71.zip"
+        THEME_URL="https://github.com/Zeedun0432/theme/raw/refs/heads/main/Unix_Theme_v2.71.zip"
         THEME_NAME="Unix Theme v2.71"
         THEME_TYPE="standard"
         break
